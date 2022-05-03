@@ -5,7 +5,7 @@ import gc
 import numpy as np
 import tensorflow as tf
 # import tensorflow.compat.v1 as tf       #tf2 changed
-tf.disable_v2_behavior()
+# tf.disable_v2_behavior()
 from VGG16 import VGG16mo
 from utilss.utilss import *
 import cv2
@@ -15,28 +15,28 @@ import matplotlib.pyplot as plt
 
 class CNN(object):
     def __init__(self): 
-        self.height = 224
-        self.width = 224
-        self.shape = np.array([224.0, 224.0])
+        self.height = 224       
+        self.width = 224            #每一个图片patch的大小为224*224
+        self.shape = np.array([224.0, 224.0])           # shape
 
         self.sift_weight = 2.0
         self.cnn_weight = 1.0
 
-        self.max_itr = 200
+        self.max_itr = 200                                          #？
 
         self.tolerance = 1e-2
-        self.freq = 5 # k in the paper
+        self.freq = 5                                   # k in the paper？？
         self.epsilon = 0.5
         self.omega = 0.5
         self.beta = 2.0
-        self.lambd = 0.5
+        self.lambd = 0.5                            #初始化一个patch中的各类参数
 
-        self.cnnph = tf.placeholder("float", [2, 224, 224, 3])
+        self.cnnph = tf.placeholder("float", [2, 224, 224, 3])      #tf.placeholder( dtype, shape=【? , patch_length, patch_wid, bgr】, name )  我们每次可以将 一个minibatch传入到x = tf.placeholder(tf.float32,[None,32])上，进行op
         self.vgg = VGG16mo()
-        self.vgg.build(self.cnnph)
+        self.vgg.build(self.cnnph)          #[1]    初始化卷积层的各个参数（load）
         self.SC = ShapeContext()
 
-    def register(self, IX, IY):
+    def register(self, IX, IY):         #[2]    进行2图片配准
 
         # set parameters
         tolerance = self.tolerance
@@ -46,24 +46,24 @@ class CNN(object):
         beta = self.beta
         lambd = self.lambd
 
-        # resize image
-        Xscale = 1.0 * np.array(IX.shape[:2]) / self.shape
+        # resize image（图像分割为patch）
+        Xscale = 1.0 * np.array(IX.shape[:2]) / self.shape          #为将原图可分为224*224大小的patch的个数
         Yscale = 1.0 * np.array(IY.shape[:2]) / self.shape
-        IX = cv2.resize(IX, (self.height, self.width))
+        IX = cv2.resize(IX, (self.height, self.width))      #IX shape = (224, 224, 3)
         IY = cv2.resize(IY, (self.height, self.width))
 
         # CNN feature
         # propagate the images through VGG16
-        IX = np.expand_dims(IX, axis=0)
+        IX = np.expand_dims(IX, axis=0)     #IX shape = (1， 224, 224, 3)
         IY = np.expand_dims(IY, axis=0)
-        cnn_input = np.concatenate((IX, IY), axis=0)
+        cnn_input = np.concatenate((IX, IY), axis=0)    #shape = (2， 224, 224, 3)
         with tf.Session() as sess:
-            feed_dict = {self.cnnph: cnn_input}
+            feed_dict = {self.cnnph: cnn_input}     #self.cnnph是一个tf.placeholder。   feed_dict相当与用于input
             D1, D2, D3 = sess.run([
-                self.vgg.pool3, self.vgg.pool4, self.vgg.pool5_1
+                self.vgg.pool3, self.vgg.pool4, self.vgg.pool5_1        #sess内容为：3个层进行计算，input = cnn_input（ref图和reg图的合并tensor）
             ], feed_dict=feed_dict)
 
-        # flatten
+        # flatten 看到这里了
         DX1, DY1 = np.reshape(D1[0], [-1, 256]), np.reshape(D1[1], [-1, 256])
         DX2, DY2 = np.reshape(D2[0], [-1, 512]), np.reshape(D2[1], [-1, 512])
         DX3, DY3 = np.reshape(D3[0], [-1, 512]), np.reshape(D3[1], [-1, 512])

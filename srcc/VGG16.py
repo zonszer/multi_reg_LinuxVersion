@@ -15,27 +15,27 @@ np.load = lambda *a,**k: np_load_old(*a, **k)           #remove  allow_pickle=Tr
 class VGG16mo:
     def __init__(self, vgg16_npy_path=None):
         if vgg16_npy_path is None:
-            path = inspect.getfile(VGG16mo)
+            path = inspect.getfile(VGG16mo)             #用于提取path of file
             path = os.path.abspath(os.path.join(path, os.pardir))
             path = os.path.join(path, "vgg16partial.npy")
             vgg16_npy_path = path
             #print(path)
 
-        self.data_dict = np.load(vgg16_npy_path, encoding='latin1', allow_pickle=True).item()
+        self.data_dict = np.load(vgg16_npy_path, encoding='latin1', allow_pickle=True).item()  #load np 数据
         #print("npy file loaded")
 
     def build(self, bgr):
-        blue, green, red = tf.split(axis=3, num_or_size_splits=3, value=bgr)
+        blue, green, red = tf.split(axis=3, num_or_size_splits=3, value=bgr)        #blue = Tensor("split:0", shape=(2, 224, 224, 1), dtype=float32)
         assert red.get_shape().as_list()[1:] == [224, 224, 1]
         assert green.get_shape().as_list()[1:] == [224, 224, 1]
         assert blue.get_shape().as_list()[1:] == [224, 224, 1]
-        bgr = tf.concat(axis=3, values=[
+        bgr = tf.concat(axis=3, values=[        
             blue - VGG_MEAN[0],
             green - VGG_MEAN[1],
             red - VGG_MEAN[2],
-        ])
+        ])          #把tensor重新拼回去（但处理一下（不知道意义何在？？））
         assert bgr.get_shape().as_list()[1:] == [224, 224, 3]
-
+        #【1】初始化卷积层的各个参数（load）
         self.conv1_1 = self.conv_layer(bgr, "conv1_1")
         self.conv1_2 = self.conv_layer(self.conv1_1, "conv1_2")
         self.pool1 = self.max_pool(self.conv1_2, 'pool1')
@@ -68,19 +68,19 @@ class VGG16mo:
         return tf.nn.max_pool(bottom, ksize=[1, 2, 2, 1], strides=[1, 4, 4, 1], padding='SAME', name=name)
 
     def conv_layer(self, bottom, name):
-        with tf.variable_scope(name):
-            filt = self.get_conv_filter(name)
+        with tf.variable_scope(name):           #估计是后面要在范围内重用这个name tensor
+            filt = self.get_conv_filter(name)       #tensor shape=(3, 3, 3, 64) 卷积盒
 
             conv = tf.nn.conv2d(bottom, filt, [1, 1, 1, 1], padding='SAME')
 
-            conv_biases = self.get_bias(name)
-            bias = tf.nn.bias_add(conv, conv_biases)
+            conv_biases = self.get_bias(name)       #1d tensor （64 values)
+            bias = tf.nn.bias_add(conv, conv_biases)        #add all and add bias:   tf.nn.bias_add 中 value 最后一维长度和 bias 的长度一定得一样
 
             relu = tf.nn.relu(bias)
             return relu
 
     def get_conv_filter(self, name):
-        return tf.constant(self.data_dict[name][0], name="filter")
+        return tf.constant(self.data_dict[name][0], name="filter")      #取data_dict中的参数(numpy转tensor)  name[0]啥意思？？
 
     def get_bias(self, name):
         return tf.constant(self.data_dict[name][1], name="biases")

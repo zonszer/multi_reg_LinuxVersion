@@ -1,0 +1,6 @@
+numpy == 1.16.2
+scipy 
+opencv-python
+matplotlib
+tensorflow == 1.15.0
+lap

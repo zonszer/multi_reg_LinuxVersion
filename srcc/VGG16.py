@@ -71,7 +71,7 @@ class VGG16mo:
         with tf.variable_scope(name):           #估计是后面要在范围内重用这个name tensor
             filt = self.get_conv_filter(name)       #tensor shape=(3, 3, 3, 64) 卷积盒
 
-            conv = tf.nn.conv2d(bottom, filt, [1, 1, 1, 1], padding='SAME')
+            conv = tf.nn.conv2d(bottom, filt, [1, 1, 1, 1], padding='SAME')     #注意这里【1111】的参数与inoput的数据的维度有关
 
             conv_biases = self.get_bias(name)       #1d tensor （64 values)
             bias = tf.nn.bias_add(conv, conv_biases)        #add all and add bias:   tf.nn.bias_add 中 value 最后一维长度和 bias 的长度一定得一样
@@ -79,7 +79,7 @@ class VGG16mo:
             relu = tf.nn.relu(bias)
             return relu
 
-    def get_conv_filter(self, name):
+    def get_conv_filter(self, name):        #加载VGG pretrained的参数主要就是一个filter一个bias
         return tf.constant(self.data_dict[name][0], name="filter")      #取data_dict中的参数(numpy转tensor)  name[0]啥意思？？
 
     def get_bias(self, name):

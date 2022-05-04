@@ -61,12 +61,12 @@ class CNN(object):
             feed_dict = {self.cnnph: cnn_input}     #self.cnnph是一个tf.placeholder。   feed_dict相当与用于input
             D1, D2, D3 = sess.run([
                 self.vgg.pool3, self.vgg.pool4, self.vgg.pool5_1        #sess内容为：3个层进行计算，input = cnn_input（ref图和reg图的合并tensor）
-            ], feed_dict=feed_dict)
+            ], feed_dict=feed_dict)         #D1 D2 D3 shape is (2, 7, 7, 512 or 256)，其中D1[0]是ref图的feature descriptor。D1[1]是fix图的（两个图的discpor同时得出来，于是多了一个维度）
 
-        # flatten 看到这里了
-        DX1, DY1 = np.reshape(D1[0], [-1, 256]), np.reshape(D1[1], [-1, 256])
-        DX2, DY2 = np.reshape(D2[0], [-1, 512]), np.reshape(D2[1], [-1, 512])
-        DX3, DY3 = np.reshape(D3[0], [-1, 512]), np.reshape(D3[1], [-1, 512])
+        # flatten 
+        DX1, DY1 = np.reshape(D1[0], [-1, 256]), np.reshape(D1[1], [-1, 256])       #DX1 DY1: shape is( 784, 256) (是784个所有点的feature descriptor)
+        DX2, DY2 = np.reshape(D2[0], [-1, 512]), np.reshape(D2[1], [-1, 512])       #DX1 DY1: shape is( 196,512) （是196个所有点的feature descriptor）
+        DX3, DY3 = np.reshape(D3[0], [-1, 512]), np.reshape(D3[1], [-1, 512])       #DX1 DY1: shape is( 49, 512) 
 
         # normalization
         DX1, DY1 = DX1 / np.std(DX1), DY1 / np.std(DY1)
@@ -77,15 +77,15 @@ class CNN(object):
 
         # compute feature space distance
         PD1 = pairwise_distance(DX1, DY1)
-        PD2 = pd_expand(pairwise_distance(DX2, DY2), 2)
+        PD2 = pd_expand(pairwise_distance(DX2, DY2), 2)     #pd—expand的作用似乎是让这几个PD维度相同??（由于部分特征点在特征图F2 F3上的descriptor是相同的）
         PD3 = pd_expand(pairwise_distance(DX3, DY3), 4)
-        PD = 1.414 * PD1 + PD2 + PD3
+        PD = 1.414 * PD1 + PD2 + PD3    #PD shape（784， 784）
 
         del DX1, DY1, DX2, DY2, DX3, DY3, PD1, PD2, PD3
 
         seq = np.array([[i, j] for i in range(28) for j in range(28)], dtype='int32')
 
-        X = np.array(seq, dtype='float32') * 8.0 + 4.0
+        X = np.array(seq, dtype='float32') * 8.0 + 4.0  #X Y的作用？？：
         Y = np.array(seq, dtype='float32') * 8.0 + 4.0
 
         # normalize

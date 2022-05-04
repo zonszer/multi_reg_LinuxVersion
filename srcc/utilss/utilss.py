@@ -40,9 +40,9 @@ def init_sigma2(X, Y):
 
 def match(PD):
     seq = np.arange(PD.shape[0])
-    amin1 = np.argmin(PD, axis=1)
-    C = np.array([seq, amin1]).transpose()
-    min1 = PD[seq, amin1]
+    amin1 = np.argmin(PD, axis=1)   #给出水平方向最小值的下标；
+    C = np.array([seq, amin1]).transpose()     #x.transpose(1, 2, 0)，其实就是将x第二维度挪到第一维上，第三维移到第二维上，原本的第一维移动到第三维上
+    min1 = PD[seq, amin1]       #C shape (784, 2) min1 shape (784, 1)
     mask = np.zeros_like(PD)
     mask[seq, amin1] = 1
     masked = np.ma.masked_array(PD, mask)
@@ -83,10 +83,10 @@ def pd_expand(PD, k):
     N0 = np.int(np.sqrt(PD.shape[0]))
     N1 = k*N0
     L0, L1 = N0**2, N1**2
-    Cmat = np.kron(np.arange(L0).reshape([N0, N0]), np.ones([k, k], dtype='int32'))
-    i = np.repeat(Cmat.reshape([L1, 1]), L1, axis=1)
+    Cmat = np.kron(np.arange(L0).reshape([N0, N0]), np.ones([k, k], dtype='int32')) # np.kron矩阵的克罗内克乘积
+    i = np.repeat(Cmat.reshape([L1, 1]), L1, axis=1)        #二维数组在第一维和第二维分别重复L1=784次
     j = np.repeat(Cmat.reshape([1, L1]), L1, axis=0)
-    return PD[i, j]
+    return PD[i, j]     #PD 2d array以i j array为index
 
 def tps_warp(Y, T, Y_image, out_shape):
     Y_height, Y_width = Y_image.shape[:2]
